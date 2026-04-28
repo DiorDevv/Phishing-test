@@ -347,46 +347,40 @@ def list_recipients_status(db: Session, base_url: str) -> list[dict[str, Any]]:
     return result
 
 
-def render_email_html(*, recipient: CampaignRecipient, base_url: str, intro_line: str, custom_message: str = "") -> str:
-    link = f"{base_url}/r/{recipient.token}"
-    pixel = f"{base_url}/pixel/{recipient.token}"
+def _safe(text: str) -> str:
+    return text.strip().replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>")
 
-    message_block = ""
-    if custom_message.strip():
-        safe_msg = custom_message.strip().replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>")
-        message_block = f"""
-    <!-- Custom xabar -->
-    <div style="background:#f8fafc;border-left:3px solid #6366f1;border-radius:8px;
-                padding:14px 16px;margin-bottom:24px">
-      <p style="margin:0;color:#334155;font-size:.93rem;line-height:1.7">{safe_msg}</p>
-    </div>"""
 
+def _email_wrapper(pixel: str, card_html: str) -> str:
     return f"""<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="background:#f1f5f9;margin:0;padding:40px 16px;
              font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
 <div style="max-width:480px;margin:0 auto">
-
-  <!-- Logo -->
   <div style="text-align:center;margin-bottom:28px">
     <div style="display:inline-block;width:48px;height:48px;border-radius:12px;
                 background:linear-gradient(135deg,#6366f1,#8b5cf6);
                 line-height:48px;text-align:center;font-size:22px">🏢</div>
   </div>
-
-  <!-- Karta -->
   <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:20px;
               padding:36px 32px;box-shadow:0 4px 20px rgba(0,0,0,.06)">
+    {card_html}
+  </div>
+  <p style="text-align:center;color:#cbd5e1;font-size:.74rem;margin-top:20px">
+    Bu xabar avtomatik yuborildi &middot; Javob bermang
+  </p>
+</div>
+<img src="{pixel}" width="1" height="1" style="display:none;border:0" alt="">
+</body></html>"""
 
+
+def render_email_html(*, recipient: CampaignRecipient, base_url: str, intro_line: str) -> str:
+    link = f"{base_url}/r/{recipient.token}"
+    pixel = f"{base_url}/pixel/{recipient.token}"
+    card = f"""
     <h2 style="margin:0 0 10px;font-size:1.35rem;font-weight:700;color:#0f172a;
                letter-spacing:-.02em">Ma'lumotlaringizni kiriting</h2>
-
-    <p style="margin:0 0 20px;color:#64748b;font-size:.94rem;line-height:1.6">
-      {intro_line}
-    </p>
-    {message_block}
-
-    <!-- Tugma -->
+    <p style="margin:0 0 28px;color:#64748b;font-size:.94rem;line-height:1.6">{intro_line}</p>
     <a href="{link}"
        style="display:block;text-align:center;
               background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);
@@ -395,20 +389,17 @@ def render_email_html(*, recipient: CampaignRecipient, base_url: str, intro_line
               box-shadow:0 6px 20px rgba(99,102,241,.38)">
       Formani to'ldirish &rarr;
     </a>
-
-    <!-- Zaxira link -->
     <p style="margin:20px 0 0;text-align:center;color:#94a3b8;font-size:.78rem;line-height:1.6">
       Tugma ishlamasa, quyidagi linkni brauzerga nusxalang:<br>
       <a href="{link}" style="color:#6366f1;word-break:break-all">{link}</a>
-    </p>
+    </p>"""
+    return _email_wrapper(pixel, card)
 
-  </div>
 
-  <p style="text-align:center;color:#cbd5e1;font-size:.74rem;margin-top:20px">
-    Bu xabar avtomatik yuborildi &middot; Javob bermang
-  </p>
-
-</div>
-<!-- tracking pixel -->
-<img src="{pixel}" width="1" height="1" style="display:none;border:0" alt="">
-</body></html>"""
+def render_message_html(*, recipient: CampaignRecipient, base_url: str, message: str) -> str:
+    pixel = f"{base_url}/pixel/{recipient.token}"
+    safe_msg = _safe(message)
+    card = f"""
+    <p style="margin:0 0 0;color:#0f172a;font-size:.97rem;line-height:1.8;
+              white-space:pre-wrap">{safe_msg}</p>"""
+    return _email_wrapper(pixel, card)

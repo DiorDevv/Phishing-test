@@ -16,6 +16,7 @@ from app.services import (
     create_simple_recipient,
     event_counts,
     get_recipient_by_id_or_404,
+    render_message_html,
     get_recipient_or_404,
     list_events,
     list_recipients_status,
@@ -99,15 +100,23 @@ def send_single_email(
     require_admin(request)
     recipient = create_simple_recipient(db, email=email)
     origin = base_url(request)
-    html_body = render_email_html(
-        recipient=recipient,
-        base_url=origin,
-        intro_line="Quyidagi tugmani bosib ism va familiyangizni kiriting.",
-        custom_message=message,
-    )
+    if message.strip():
+        html_body = render_message_html(
+            recipient=recipient,
+            base_url=origin,
+            message=message,
+        )
+        subject = "Sizga xabar"
+    else:
+        html_body = render_email_html(
+            recipient=recipient,
+            base_url=origin,
+            intro_line="Quyidagi tugmani bosib ism va familiyangizni kiriting.",
+        )
+        subject = "Ma'lumotlaringizni kiriting"
     send_html_email(
         to_email=recipient.email,
-        subject="Ma'lumotlaringizni kiriting",
+        subject=subject,
         html_body=html_body,
     )
     db.commit()
