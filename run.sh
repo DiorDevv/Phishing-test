@@ -9,7 +9,6 @@ if [[ ! -d .venv ]]; then
     cat /tmp/phishing_venv_error.log
     echo
     echo "Missing prerequisite: python3 venv support is not installed."
-    echo "Install your system package for venv support, then run ./run.sh again."
     exit 1
   fi
 fi
@@ -17,4 +16,10 @@ fi
 source .venv/bin/activate
 python3 -m ensurepip --upgrade >/dev/null 2>&1 || true
 python3 -m pip install -r requirements.txt
-exec uvicorn app.main:app --reload --host 127.0.0.1 --port 7777 --log-level info
+
+# Render da RENDER env variable mavjud bo'ladi
+if [[ -n "${RENDER:-}" ]]; then
+  exec uvicorn app.main:app --host 0.0.0.0 --port "${PORT:-8000}" --log-level info
+else
+  exec uvicorn app.main:app --reload --host 127.0.0.1 --port "${PORT:-7777}" --log-level info
+fi

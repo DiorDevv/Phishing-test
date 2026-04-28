@@ -109,15 +109,6 @@ def send_single_email(
         html_body=html_body,
     )
     db.commit()
-    background_tasks.add_task(
-        notify_admin,
-        event_type="sent",
-        recipient_email=recipient.email,
-        extra={
-            "📧 Yuborilgan email": recipient.email,
-            "📎 Tracking link": f"{origin}/r/{recipient.token}",
-        },
-    )
     return recipient_status_payload(db, recipient, origin)
 
 

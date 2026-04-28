@@ -1,6 +1,5 @@
 import logging
 import smtplib
-import time
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -12,7 +11,6 @@ from app.config import SMTP_FROM, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USER
 log = logging.getLogger(__name__)
 
 _EVENT_META = {
-    "sent":      ("📤 Email Yuborildi",   "#6366f1"),
     "opened":    ("📨 Email O'qildi",     "#a855f7"),
     "viewed":    ("👁  Forma Ochildi",    "#f59e0b"),
     "submitted": ("✅ Forma To'ldirildi", "#10b981"),
@@ -65,10 +63,6 @@ def notify_admin(
 ) -> None:
     if not smtp_ready():
         return
-
-    # "sent" notification runs right after employee email — wait 4s to avoid Gmail throttle
-    if event_type == "sent":
-        time.sleep(4)
 
     label, color = _EVENT_META.get(event_type, (event_type, "#6366f1"))
     now = datetime.now().strftime("%d.%m.%Y  %H:%M:%S")

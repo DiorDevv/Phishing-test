@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: contact-sender
+    runtime: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT --log-level info"
+    envVars:
+      - key: SIM_ADMIN_KEY
+        generateValue: true
+      - key: SIM_SMTP_HOST
+        value: smtp.gmail.com
+      - key: SIM_SMTP_PORT
+        value: "587"
+      - key: SIM_SMTP_USE_TLS
+        value: "true"
+      - key: SIM_SMTP_USERNAME
+        sync: false
+      - key: SIM_SMTP_PASSWORD
+        sync: false
+      - key: SIM_SMTP_FROM
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: contact-sender-db
+          property: connectionString
+
+databases:
+  - name: contact-sender-db
+    plan: free

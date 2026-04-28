@@ -21,7 +21,14 @@ _load_dotenv()
 DATA_DIR = BASE_DIR / "data"
 TEMPLATES_DIR = BASE_DIR / "templates"
 STATIC_DIR = BASE_DIR / "static"
-DATABASE_URL = f"sqlite:///{DATA_DIR / 'simulator.db'}"
+
+# PostgreSQL (Render) yoki SQLite (local) avtomatik tanlanadi
+_raw_db_url = os.getenv("DATABASE_URL", "")
+if _raw_db_url.startswith("postgres://"):
+    # Render postgres:// → sqlalchemy postgresql://
+    _raw_db_url = _raw_db_url.replace("postgres://", "postgresql://", 1)
+DATABASE_URL = _raw_db_url or f"sqlite:///{DATA_DIR / 'simulator.db'}"
+
 SMTP_HOST = os.getenv("SIM_SMTP_HOST", "")
 SMTP_PORT = int(os.getenv("SIM_SMTP_PORT", "587"))
 SMTP_USERNAME = os.getenv("SIM_SMTP_USERNAME", "")
