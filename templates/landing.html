@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ recipient.campaign.landing_title }}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="landing-body">
+<div class="landing-wrap">
+
+  <div class="landing-header">
+    <div class="landing-logo">🏢</div>
+    <p class="landing-company">HR Department</p>
+    <h1 class="landing-title">{{ recipient.campaign.landing_title }}</h1>
+    <p class="landing-desc">{{ recipient.campaign.landing_message }}</p>
+  </div>
+
+  <div class="landing-card">
+    {% if submitted %}
+      <div class="success-wrap">
+        <div class="success-icon">✓</div>
+        <h2 class="success-title">Ma'lumot qabul qilindi!</h2>
+        <p class="success-sub">
+          Rahmat, <strong>{{ first_name }} {{ last_name }}</strong>.<br>
+          Ma'lumotingiz muvaffaqiyatli yuborildi.
+        </p>
+      </div>
+    {% else %}
+      <form method="post" class="stack" style="gap:0">
+        <div class="landing-field">
+          <label class="landing-label">Ismingiz</label>
+          <input class="landing-input" name="first_name" placeholder="Masalan: Ali" required autofocus>
+        </div>
+        <div class="landing-field">
+          <label class="landing-label">Familiyangiz</label>
+          <input class="landing-input" name="last_name" placeholder="Masalan: Valiyev" required>
+        </div>
+        <button type="submit" class="landing-submit">Yuborish</button>
+      </form>
+      <p class="landing-footer">🔒 Ma'lumotlaringiz xavfsiz saqlanadi</p>
+    {% endif %}
+  </div>
+
+</div>
+</body>
+</html>

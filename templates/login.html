@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin · Kirish</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">📡</div>
+    <p class="eyebrow">Admin Panel</p>
+    <h1 class="login-title">Kirish</h1>
+    <p class="login-sub">Admin kalitni kiriting va panelga o'ting.</p>
+    <form id="login-form" class="stack">
+      <div class="field">
+        <label class="field-label">Admin kalit</label>
+        <input name="admin_key" type="password" placeholder="SIM_ADMIN_KEY" required autofocus>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block" style="margin-top:4px">
+        Panelga kirish &rarr;
+      </button>
+    </form>
+  </div>
+</div>
+<script>
+  document.getElementById('login-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const key = new FormData(e.target).get('admin_key');
+    window.location.href = `/?admin_key=${encodeURIComponent(String(key))}`;
+  });
+</script>
+</body>
+</html>

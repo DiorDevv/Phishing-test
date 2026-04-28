@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ campaign.name }}</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <main class="shell">
+        <section class="panel">
+            <p class="eyebrow">Campaign Detail</p>
+            <h1>{{ campaign.name }}</h1>
+            <p class="lede">{{ campaign.landing_message }}</p>
+            <p class="meta"><a href="/?admin_key={{ admin_key }}">Back to dashboard</a></p>
+        </section>
+
+        <section class="panel table-wrap">
+            <h2>Recipients</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Employee Ref</th>
+                        <th>Department</th>
+                        <th>Token</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for recipient in recipients %}
+                    <tr>
+                        <td><a href="/recipients/{{ recipient.id }}?admin_key={{ admin_key }}">{{ recipient.id }}</a></td>
+                        <td>{{ recipient.full_name }}</td>
+                        <td>{{ recipient.email }}</td>
+                        <td>{{ recipient.employee_ref }}</td>
+                        <td>{{ recipient.department }}</td>
+                        <td>{{ recipient.token }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="6">No recipients for this campaign.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    </main>
+</body>
+</html>

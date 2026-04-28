@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ summary.recipient.full_name }} · Detail</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<main class="shell">
+
+  <!-- Header -->
+  <div class="card mb-4" style="margin-bottom:20px">
+    <div class="detail-hero">
+      <div>
+        <p class="eyebrow">Recipient Detail</p>
+        <h1 class="detail-name">{{ summary.recipient.full_name }}</h1>
+        <p class="detail-meta">
+          {{ summary.recipient.email }} &nbsp;·&nbsp;
+          {{ summary.recipient.department }} &nbsp;·&nbsp;
+          {{ summary.recipient.campaign.name }}
+        </p>
+      </div>
+      <a href="/?admin_key={{ admin_key }}" class="btn btn-ghost">← Dashboard</a>
+    </div>
+
+    <hr class="card-divider">
+
+    <div class="metrics" style="grid-template-columns:repeat(5,1fr);margin-bottom:0">
+      <div class="metric-card m-sent">
+        <div class="metric-label sent">Sent</div>
+        <div class="metric-value">{{ summary.counts.sent }}</div>
+      </div>
+      <div class="metric-card m-opened">
+        <div class="metric-label opened">Opened</div>
+        <div class="metric-value">{{ summary.counts.opened }}</div>
+      </div>
+      <div class="metric-card m-clicked">
+        <div class="metric-label clicked">Clicked</div>
+        <div class="metric-value">{{ summary.counts.clicked }}</div>
+      </div>
+      <div class="metric-card m-viewed">
+        <div class="metric-label viewed">Viewed</div>
+        <div class="metric-value">{{ summary.counts.viewed }}</div>
+      </div>
+      <div class="metric-card m-submitted">
+        <div class="metric-label submitted">Submitted</div>
+        <div class="metric-value">{{ summary.counts.submitted }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tracking link -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title mb-4">Tracking link</div>
+    <div class="result-meta">
+      <div class="result-meta-item">
+        <div class="result-meta-label">Click link</div>
+        <div class="result-meta-val">
+          <a href="{{ base_url }}/r/{{ summary.recipient.token }}" target="_blank" rel="noreferrer">
+            {{ base_url }}/r/{{ summary.recipient.token }}
+          </a>
+        </div>
+      </div>
+      <div class="result-meta-item">
+        <div class="result-meta-label">Landing</div>
+        <div class="result-meta-val">
+          <a href="{{ base_url }}/landing/{{ summary.recipient.token }}" target="_blank" rel="noreferrer">
+            {{ base_url }}/landing/{{ summary.recipient.token }}
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Events table -->
+  <div class="card table-card">
+    <div class="card-title mb-4">Barcha eventlar</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Vaqt</th>
+            <th>Event</th>
+            <th>IP</th>
+            <th>User-Agent</th>
+            <th>Ma'lumot</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for event in summary.events %}
+          <tr>
+            <td style="white-space:nowrap;color:var(--text-2)">{{ event.created_at.strftime('%d.%m.%Y %H:%M:%S') }}</td>
+            <td><span class="ev-badge ev-{{ event.event_type.value }}">{{ event.event_type.value }}</span></td>
+            <td>{{ event.ip_address }}</td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;font-size:.78rem">{{ event.user_agent }}</td>
+            <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis">{{ event.metadata_json }}</td>
+          </tr>
+          {% else %}
+          <tr class="empty-row"><td colspan="5">Hali hech qanday event yo'q.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>

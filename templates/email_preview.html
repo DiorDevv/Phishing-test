@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Preview</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <main class="shell">
+        <section class="panel">
+            <p class="eyebrow">Email Preview</p>
+            <h1>{{ recipient.full_name }}</h1>
+            <p class="lede">Sample HTML for your contact request campaign. It includes only a normal link, without hidden email-open tracking.</p>
+            <pre>{{ html_body }}</pre>
+            <p class="meta"><a href="/recipients/{{ recipient.id }}?admin_key={{ admin_key }}">Back to recipient</a></p>
+        </section>
+    </main>
+</body>
+</html>

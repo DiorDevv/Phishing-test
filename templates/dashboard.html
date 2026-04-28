@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin · Dashboard</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    /* ── Extra dashboard styles ─── */
+    .recipients-table td { white-space: nowrap; }
+    .recipients-table td.email-cell { max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+    .dot-on  { background: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.2); }
+    .dot-off { background: #334155; }
+
+    .cell-done   { color: var(--text); font-size: .82rem; }
+    .cell-done strong { color: #10b981; font-weight: 600; }
+    .cell-pending { color: var(--text-3); font-size: .82rem; }
+
+    .time-tag { font-size: .78rem; color: var(--text-2); }
+
+    .btn-danger {
+      font: inherit; cursor: pointer; border: 1px solid rgba(239,68,68,.25);
+      background: rgba(239,68,68,.08); color: #f87171;
+      padding: 6px 12px; border-radius: 8px; font-size: .8rem; font-weight: 600;
+      transition: background .18s, border-color .18s;
+    }
+    .btn-danger:hover { background: rgba(239,68,68,.18); border-color: rgba(239,68,68,.4); }
+
+    .btn-detail {
+      font: inherit; cursor: pointer; border: 1px solid var(--border-s);
+      background: transparent; color: var(--text-2);
+      padding: 6px 12px; border-radius: 8px; font-size: .8rem; font-weight: 600;
+      transition: background .18s, color .18s; text-decoration: none; display: inline-block;
+    }
+    .btn-detail:hover { background: var(--surface-h); color: var(--text); }
+
+    /* result panel live */
+    .live-dot {
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      background: #10b981; margin-left: 8px; vertical-align: middle;
+      animation: pulse 1.4s infinite;
+    }
+    .live-dot.off { background: var(--text-3); animation: none; }
+
+    .track-value.done { color: #10b981 !important; }
+    .track-value.name-val { color: #f1f5f9; font-weight: 700; font-size: .9rem; }
+
+    .row-new { animation: rowFade .6s ease; }
+    @keyframes rowFade { from { background: rgba(99,102,241,.12); } to { background: transparent; } }
+
+    .sent-time { font-size: .78rem; color: var(--text-3); }
+
+    /* modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7);
+      backdrop-filter: blur(4px); z-index: 1000; place-items: center;
+    }
+    .modal-overlay.open { display: grid; }
+    .modal-box {
+      background: #0d1117; border: 1px solid var(--border-s);
+      border-radius: var(--r-xl); padding: 32px; width: min(640px, 95vw);
+      max-height: 85vh; overflow-y: auto; box-shadow: var(--shadow);
+      position: relative;
+    }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px;
+      font: inherit; cursor: pointer; border: 1px solid var(--border-s);
+      background: var(--surface); color: var(--text-2);
+      width: 32px; height: 32px; border-radius: 8px; font-size: 1.1rem;
+      display: grid; place-items: center; transition: background .15s;
+    }
+    .modal-close:hover { background: var(--surface-h); color: var(--text); }
+    .modal-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; padding-right: 40px; }
+    .modal-sub { font-size: .86rem; color: var(--text-2); margin-bottom: 24px; }
+    .detail-row {
+      display: flex; justify-content: space-between; gap: 12px;
+      padding: 12px 0; border-bottom: 1px solid var(--border);
+      font-size: .875rem;
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-key { color: var(--text-2); flex-shrink: 0; }
+    .detail-val { color: var(--text); font-weight: 600; word-break: break-all; text-align: right; }
+    .detail-val.mono { font-family: monospace; font-size: .82rem; }
+    .detail-val a { color: var(--accent-l); text-decoration: none; }
+    .detail-val a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div id="toast-container"></div>
+
+<main class="shell">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-logo">📡</div>
+      <div>
+        <div class="topbar-name">Contact Sender</div>
+        <div class="topbar-sub">Admin Panel</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span class="text-muted text-sm" id="last-refresh">—</span>
+      {% if smtp_ready %}
+        <span class="badge badge-green"><span class="badge-dot"></span> SMTP tayyor</span>
+      {% else %}
+        <span class="badge badge-yellow"><span class="badge-dot"></span> SMTP sozlanmagan</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics">
+    <div class="metric-card m-sent">
+      <div class="metric-label sent">Yuborildi</div>
+      <div class="metric-value" id="m-sent">{{ counts.sent }}</div>
+      <div class="metric-desc">Email yuborilgan</div>
+    </div>
+    <div class="metric-card m-opened">
+      <div class="metric-label opened">Ochildi</div>
+      <div class="metric-value" id="m-opened">{{ counts.opened }}</div>
+      <div class="metric-desc">Email o'qilgan</div>
+    </div>
+    <div class="metric-card m-clicked">
+      <div class="metric-label clicked">Bosildi</div>
+      <div class="metric-value" id="m-clicked">{{ counts.clicked }}</div>
+      <div class="metric-desc">Link bosilgan</div>
+    </div>
+    <div class="metric-card m-viewed">
+      <div class="metric-label viewed">Forma ochildi</div>
+      <div class="metric-value" id="m-viewed">{{ counts.viewed }}</div>
+      <div class="metric-desc">Sahifa ko'rilgan</div>
+    </div>
+    <div class="metric-card m-submitted">
+      <div class="metric-label submitted">To'ldirildi</div>
+      <div class="metric-value" id="m-submitted">{{ counts.submitted }}</div>
+      <div class="metric-desc">Forma to'ldirilgan</div>
+    </div>
+  </div>
+
+  <!-- Send + Result -->
+  <div class="main-grid" style="margin-bottom:20px">
+
+    <!-- Send form -->
+    <div class="card" style="align-self:start">
+      <div class="card-title">Email yuborish</div>
+      <div class="card-sub">Xodimning emailiga forma bilan link yuboriladi.</div>
+      <form id="send-form" class="stack">
+        <div class="field">
+          <label class="field-label">Recipient email</label>
+          <input name="email" type="email" placeholder="xodim@company.com" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="send-btn">
+          ✉&nbsp; Yuborish
+        </button>
+      </form>
+    </div>
+
+    <!-- Result panel -->
+    <div class="card">
+      <div class="card-title">
+        Oxirgi natija
+        <span class="live-dot off" id="live-dot" title="Real-time yangilanmoqda"></span>
+      </div>
+      <div class="card-sub">Email yuborganingizdan so'ng real-time holati shu yerda yangilanadi.</div>
+
+      <div class="result-panel is-empty" id="result-panel">
+        <div class="result-header">
+          <div>
+            <div class="result-eyebrow">Recipient</div>
+            <div class="result-email" id="result-email">— email kiritib yuboring</div>
+          </div>
+          <span class="status-pill" id="result-state">Kutilmoqda</span>
+        </div>
+
+        <div class="track-grid">
+          <div class="track-item">
+            <div class="track-label sent">📤 Yuborildi</div>
+            <div class="track-value" id="t-sent">—</div>
+          </div>
+          <div class="track-item">
+            <div class="track-label opened">📨 Email ochildi</div>
+            <div class="track-value" id="t-opened">kutilmoqda</div>
+          </div>
+          <div class="track-item">
+            <div class="track-label clicked">🔗 Link bosildi</div>
+            <div class="track-value" id="t-clicked">kutilmoqda</div>
+          </div>
+          <div class="track-item">
+            <div class="track-label viewed">👁 Forma ochildi</div>
+            <div class="track-value" id="t-viewed">kutilmoqda</div>
+          </div>
+          <div class="track-item">
+            <div class="track-label submitted">✅ Forma yuborildi</div>
+            <div class="track-value" id="t-submitted">kutilmoqda</div>
+          </div>
+          <div class="track-item">
+            <div class="track-label" style="color:var(--e-submitted)">👤 Ism Familiya</div>
+            <div class="track-value" id="t-name">—</div>
+          </div>
+        </div>
+
+        <div class="result-meta">
+          <div class="result-meta-item">
+            <div class="result-meta-label">Tracking link</div>
+            <div class="result-meta-val"><a id="r-link" href="#" target="_blank" rel="noreferrer">—</a></div>
+          </div>
+          <div class="result-meta-item">
+            <div class="result-meta-label">Landing URL</div>
+            <div class="result-meta-val"><a id="r-landing" href="#" target="_blank" rel="noreferrer">—</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Recipients table -->
+  <div class="card table-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div>
+        <div class="card-title" style="margin-bottom:2px">Barcha emaillar</div>
+        <div class="text-muted text-sm">Har 4 soniyada avtomatik yangilanadi</div>
+      </div>
+      <span class="badge badge-green" id="tbl-count" style="font-size:.78rem">0 ta</span>
+    </div>
+    <div class="table-wrap">
+      <table class="recipients-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Email</th>
+            <th>Yuborildi</th>
+            <th>📨 Email ochildi</th>
+            <th>👁 Forma ochildi</th>
+            <th>✅ Ism Familiya</th>
+            <th>Amallar</th>
+          </tr>
+        </thead>
+        <tbody id="recipients-body">
+          <tr class="empty-row"><td colspan="7">Yuklanmoqda…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="document.getElementById('modal').classList.remove('open')">✕</button>
+    <div class="modal-title" id="modal-title">—</div>
+    <div class="modal-sub" id="modal-sub">—</div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const ADMIN_KEY = {{ admin_key|tojson }};
+
+/* ── Utilities ── */
+function toast(icon, msg) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = `<span class="toast-icon">${icon}</span><span class="toast-msg">${msg}</span>`;
+  document.getElementById('toast-container').prepend(el);
+  setTimeout(() => { el.classList.add('hiding'); setTimeout(() => el.remove(), 300); }, 5000);
+}
+
+function fmt(ts) {
+  if (!ts) return null;
+  const d = new Date(ts.replace(' ', 'T'));
+  if (isNaN(d)) return ts;
+  return d.toLocaleString('uz-UZ', { day:'2-digit', month:'2-digit', year:'numeric',
+                                      hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+function fmtShort(ts) {
+  if (!ts) return null;
+  const d = new Date(ts.replace(' ', 'T'));
+  if (isNaN(d)) return ts;
+  return d.toLocaleTimeString('uz-UZ', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+
+/* ── Result panel ── */
+let currentId = null;
+let pollTimer = null;
+
+function fillTrack(id, val, done = false) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = val || '—';
+  el.className = 'track-value' + (done ? ' done' : '');
+}
+
+function showResult(data) {
+  const panel = document.getElementById('result-panel');
+  panel.classList.remove('is-empty');
+
+  document.getElementById('result-email').textContent = data.email;
+  document.getElementById('result-state').textContent = data.status === 'sent' ? 'Yuborildi ✓' : data.status;
+
+  fillTrack('t-sent',      fmt(data.sent_at)      || '—',             !!data.sent_at);
+  fillTrack('t-opened',    fmt(data.opened_at)    || 'kutilmoqda',    !!data.opened_at);
+  fillTrack('t-clicked',   fmt(data.clicked_at)   || 'kutilmoqda',    !!data.clicked_at);
+  fillTrack('t-viewed',    fmt(data.viewed_at)    || 'kutilmoqda',    !!data.viewed_at);
+  fillTrack('t-submitted', fmt(data.submitted_at) || 'kutilmoqda',    !!data.submitted_at);
+
+  const nameEl = document.getElementById('t-name');
+  if (data.submitted_name) {
+    nameEl.textContent = data.submitted_name;
+    nameEl.className = 'track-value name-val done';
+  } else {
+    nameEl.textContent = 'kutilmoqda';
+    nameEl.className = 'track-value';
+  }
+
+  const link = document.getElementById('r-link');
+  link.textContent = data.link || '—'; link.href = data.link || '#';
+  const landing = document.getElementById('r-landing');
+  landing.textContent = data.landing_url || '—'; landing.href = data.landing_url || '#';
+}
+
+async function pollCurrent() {
+  if (!currentId) return;
+  try {
+    const res = await fetch(`/api/status/${currentId}?admin_key=${encodeURIComponent(ADMIN_KEY)}`);
+    if (!res.ok) return;
+    showResult(await res.json());
+  } catch {}
+}
+
+function startPolling(id) {
+  currentId = id;
+  document.getElementById('live-dot').className = 'live-dot';
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(pollCurrent, 3000);
+}
+
+/* ── Recipients table ── */
+function statusCell(ts, label) {
+  if (ts) return `<span class="cell-done"><span class="dot dot-on"></span>${fmtShort(ts)}</span>`;
+  return `<span class="cell-pending"><span class="dot dot-off"></span>yo'q</span>`;
+}
+
+function renderRecipients(list) {
+  const tbody = document.getElementById('recipients-body');
+  document.getElementById('tbl-count').textContent = `${list.length} ta`;
+
+  if (!list.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Hali hech qanday email yo\'q.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = list.map((r, i) => `
+    <tr id="row-${r.id}">
+      <td style="color:var(--text-3);font-size:.8rem">${i+1}</td>
+      <td class="email-cell" title="${r.email}">
+        <span style="font-weight:600;color:var(--text)">${r.email}</span>
+      </td>
+      <td><span class="sent-time">${fmtShort(r.sent_at) || '—'}</span></td>
+      <td>${statusCell(r.opened_at)}</td>
+      <td>${statusCell(r.viewed_at)}</td>
+      <td>
+        ${r.submitted_name
+          ? `<span class="cell-done" style="color:#10b981;font-weight:700">✓ ${r.submitted_name}</span>`
+          : `<span class="cell-pending">—</span>`}
+      </td>
+      <td>
+        <div style="display:flex;gap:8px">
+          <button class="btn-detail" onclick="showDetail(${r.id})">Ko'rish</button>
+          <button class="btn-danger" onclick="deleteRecipient(${r.id}, '${r.email}')">O'chirish</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+let allData = [];
+
+async function refreshRecipients() {
+  try {
+    const res = await fetch(`/api/recipients?admin_key=${encodeURIComponent(ADMIN_KEY)}`);
+    if (!res.ok) return;
+    allData = await res.json();
+    renderRecipients(allData);
+    document.getElementById('last-refresh').textContent =
+      'Yangilandi: ' + new Date().toLocaleTimeString('uz-UZ');
+  } catch {}
+}
+
+async function deleteRecipient(id, email) {
+  if (!confirm(`"${email}" emailini o'chirishni tasdiqlaysizmi?\nBarcha eventlar ham o'chiriladi.`)) return;
+  try {
+    const res = await fetch(`/api/recipients/${id}?admin_key=${encodeURIComponent(ADMIN_KEY)}`,
+      { method: 'DELETE' });
+    if (res.ok) {
+      toast('🗑️', `<strong>${email}</strong> o'chirildi`);
+      if (currentId === id) {
+        currentId = null;
+        document.getElementById('live-dot').className = 'live-dot off';
+        document.getElementById('result-panel').classList.add('is-empty');
+      }
+      await refreshRecipients();
+    }
+  } catch { toast('❌', 'O\'chirishda xatolik'); }
+}
+
+/* ── Detail Modal ── */
+function showDetail(id) {
+  const r = allData.find(x => x.id === id);
+  if (!r) return;
+  document.getElementById('modal-title').textContent = r.email;
+  document.getElementById('modal-sub').textContent = `Recipient ID: ${r.id}`;
+
+  const rows = [
+    ['Email',          r.email,           false],
+    ['📤 Yuborildi',   fmt(r.sent_at) || '—',     false],
+    ['📨 Email ochildi', fmt(r.opened_at) || 'Ochilmagan', false],
+    ['🔗 Link bosildi', fmt(r.clicked_at) || 'Bosilmagan', false],
+    ['👁 Forma ochildi', fmt(r.viewed_at) || 'Ochilmagan', false],
+    ['✅ Forma yuborildi', fmt(r.submitted_at) || 'Yuborilmagan', false],
+    ['👤 Ism Familiya', r.submitted_name || '—',  false],
+    ['Tracking link',  r.link,            true],
+    ['Landing URL',    r.landing_url,     true],
+  ];
+
+  document.getElementById('modal-body').innerHTML = rows.map(([k, v, isLink]) => `
+    <div class="detail-row">
+      <span class="detail-key">${k}</span>
+      <span class="detail-val ${isLink ? 'mono' : ''}">
+        ${isLink ? `<a href="${v}" target="_blank" rel="noreferrer">${v}</a>` : v}
+      </span>
+    </div>
+  `).join('');
+
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal'))
+    document.getElementById('modal').classList.remove('open');
+}
+
+/* ── Send form ── */
+document.getElementById('send-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('send-btn');
+  const email = new FormData(e.target).get('email');
+  btn.disabled = true;
+  btn.textContent = 'Yuborilmoqda…';
+
+  try {
+    const res = await fetch(`/api/send?admin_key=${encodeURIComponent(ADMIN_KEY)}`,
+      { method: 'POST', body: new FormData(e.target) });
+    const data = await res.json();
+
+    if (res.ok) {
+      showResult(data);
+      startPolling(data.recipient_id);
+      toast('✉️', `Email yuborildi → <strong>${email}</strong>`);
+      e.target.reset();
+      await refreshRecipients();
+      // Highlight new row
+      setTimeout(() => {
+        const row = document.getElementById(`row-${data.recipient_id}`);
+        if (row) { row.classList.add('row-new'); row.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+      }, 300);
+    } else {
+      toast('❌', data.detail || 'Xatolik yuz berdi');
+    }
+  } catch {
+    toast('❌', 'Server bilan aloqa uzildi');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '✉&nbsp; Yuborish';
+  }
+});
+
+/* ── Init ── */
+refreshRecipients();
+setInterval(refreshRecipients, 4000);
+</script>
+</body>
+</html>
