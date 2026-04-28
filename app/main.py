@@ -93,6 +93,7 @@ def send_single_email(
     request: Request,
     background_tasks: BackgroundTasks,
     email: str = Form(...),
+    message: str = Form(""),
     db: Session = Depends(get_db),
 ):
     require_admin(request)
@@ -102,6 +103,7 @@ def send_single_email(
         recipient=recipient,
         base_url=origin,
         intro_line="Quyidagi tugmani bosib ism va familiyangizni kiriting.",
+        custom_message=message,
     )
     send_html_email(
         to_email=recipient.email,

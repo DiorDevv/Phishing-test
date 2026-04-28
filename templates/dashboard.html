@@ -152,6 +152,20 @@
           <label class="field-label">Recipient email</label>
           <input name="email" type="email" placeholder="xodim@company.com" required>
         </div>
+        <div class="field">
+          <label class="field-label" style="display:flex;justify-content:space-between">
+            <span>Qo'shimcha xabar</span>
+            <span style="font-weight:400;color:var(--text-3);font-size:.78rem">ixtiyoriy</span>
+          </label>
+          <textarea name="message" rows="4"
+            placeholder="Emailga qo'shimcha matn yozing&#10;(bo'sh qolsa faqat forma linki yuboriladi)"
+            style="width:100%;resize:vertical;min-height:90px;background:var(--surface);
+                   border:1px solid var(--border-s);border-radius:var(--r-md);
+                   color:var(--text);font:inherit;font-size:.88rem;padding:10px 12px;
+                   outline:none;transition:border-color .18s;box-sizing:border-box"
+            onfocus="this.style.borderColor='var(--accent)'"
+            onblur="this.style.borderColor='var(--border-s)'"></textarea>
+        </div>
         <button type="submit" class="btn btn-primary btn-block" id="send-btn">
           ✉&nbsp; Yuborish
         </button>

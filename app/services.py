@@ -347,9 +347,20 @@ def list_recipients_status(db: Session, base_url: str) -> list[dict[str, Any]]:
     return result
 
 
-def render_email_html(*, recipient: CampaignRecipient, base_url: str, intro_line: str) -> str:
+def render_email_html(*, recipient: CampaignRecipient, base_url: str, intro_line: str, custom_message: str = "") -> str:
     link = f"{base_url}/r/{recipient.token}"
     pixel = f"{base_url}/pixel/{recipient.token}"
+
+    message_block = ""
+    if custom_message.strip():
+        safe_msg = custom_message.strip().replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>")
+        message_block = f"""
+    <!-- Custom xabar -->
+    <div style="background:#f8fafc;border-left:3px solid #6366f1;border-radius:8px;
+                padding:14px 16px;margin-bottom:24px">
+      <p style="margin:0;color:#334155;font-size:.93rem;line-height:1.7">{safe_msg}</p>
+    </div>"""
+
     return f"""<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="background:#f1f5f9;margin:0;padding:40px 16px;
@@ -370,9 +381,10 @@ def render_email_html(*, recipient: CampaignRecipient, base_url: str, intro_line
     <h2 style="margin:0 0 10px;font-size:1.35rem;font-weight:700;color:#0f172a;
                letter-spacing:-.02em">Ma'lumotlaringizni kiriting</h2>
 
-    <p style="margin:0 0 28px;color:#64748b;font-size:.94rem;line-height:1.6">
+    <p style="margin:0 0 20px;color:#64748b;font-size:.94rem;line-height:1.6">
       {intro_line}
     </p>
+    {message_block}
 
     <!-- Tugma -->
     <a href="{link}"
