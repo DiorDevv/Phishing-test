@@ -35,3 +35,4 @@ SMTP_USERNAME = os.getenv("SIM_SMTP_USERNAME", "")
 SMTP_PASSWORD = os.getenv("SIM_SMTP_PASSWORD", "")
 SMTP_FROM = os.getenv("SIM_SMTP_FROM", "")
 SMTP_USE_TLS = os.getenv("SIM_SMTP_USE_TLS", "true").lower() == "true"
+SMTP_DISPLAY_NAME = os.getenv("SIM_SMTP_DISPLAY_NAME", "")

@@ -6,7 +6,7 @@ from email.mime.text import MIMEText
 
 from fastapi import HTTPException
 
-from app.config import SMTP_FROM, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME, SMTP_USE_TLS
+from app.config import SMTP_DISPLAY_NAME, SMTP_FROM, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME, SMTP_USE_TLS
 
 log = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ def _open_smtp() -> smtplib.SMTP:
 def _make_message(to_email: str, subject: str, html_body: str) -> MIMEMultipart:
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"] = SMTP_FROM
+    msg["From"] = f"{SMTP_DISPLAY_NAME} <{SMTP_FROM}>" if SMTP_DISPLAY_NAME else SMTP_FROM
     msg["To"] = to_email
     msg.attach(MIMEText(html_body, "html", "utf-8"))
     return msg
