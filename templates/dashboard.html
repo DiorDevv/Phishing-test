@@ -364,8 +364,9 @@ function renderRecipients(list) {
       <td>${statusCell(r.opened_at)}</td>
       <td>${statusCell(r.viewed_at)}</td>
       <td>
-        ${r.submitted_name
-          ? `<span class="cell-done" style="color:#10b981;font-weight:700">✓ ${r.submitted_name}</span>`
+        ${r.submissions && r.submissions.length > 0
+          ? `<span class="cell-done" style="color:#10b981;font-weight:700">✓ ${r.submissions[0].name}</span>
+             ${r.submissions.length > 1 ? `<span style="margin-left:6px;background:rgba(99,102,241,.18);color:#818cf8;font-size:.72rem;font-weight:700;padding:2px 7px;border-radius:999px">${r.submissions.length}x</span>` : ''}`
           : `<span class="cell-pending">—</span>`}
       </td>
       <td>
@@ -416,25 +417,54 @@ function showDetail(id) {
   document.getElementById('modal-sub').textContent = `Recipient ID: ${r.id}`;
 
   const rows = [
-    ['Email',          r.email,           false],
-    ['📤 Yuborildi',   fmt(r.sent_at) || '—',     false],
-    ['📨 Email ochildi', fmt(r.opened_at) || 'Ochilmagan', false],
-    ['🔗 Link bosildi', fmt(r.clicked_at) || 'Bosilmagan', false],
-    ['👁 Forma ochildi', fmt(r.viewed_at) || 'Ochilmagan', false],
-    ['✅ Forma yuborildi', fmt(r.submitted_at) || 'Yuborilmagan', false],
-    ['👤 Ism Familiya', r.submitted_name || '—',  false],
-    ['Tracking link',  r.link,            true],
-    ['Landing URL',    r.landing_url,     true],
+    ['Email',             r.email,                              false],
+    ['📤 Yuborildi',      fmt(r.sent_at)    || '—',            false],
+    ['📨 Email ochildi',  fmt(r.opened_at)  || 'Ochilmagan',   false],
+    ['🔗 Link bosildi',   fmt(r.clicked_at) || 'Bosilmagan',   false],
+    ['👁 Forma ochildi',  fmt(r.viewed_at)  || 'Ochilmagan',   false],
+    ['Tracking link',     r.link,                               true],
+    ['Landing URL',       r.landing_url,                        true],
   ];
 
-  document.getElementById('modal-body').innerHTML = rows.map(([k, v, isLink]) => `
-    <div class="detail-row">
-      <span class="detail-key">${k}</span>
-      <span class="detail-val ${isLink ? 'mono' : ''}">
-        ${isLink ? `<a href="${v}" target="_blank" rel="noreferrer">${v}</a>` : v}
-      </span>
-    </div>
-  `).join('');
+  let submissionsHtml = '';
+  if (r.submissions && r.submissions.length > 0) {
+    submissionsHtml = `
+      <div style="margin-top:16px">
+        <div style="font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+                    color:var(--text-3);margin-bottom:10px">
+          ✅ Yuborishlar tarixi (${r.submissions.length} ta)
+        </div>
+        ${r.submissions.map((s, i) => `
+          <div style="background:#0a0d16;border:1px solid var(--border);border-radius:12px;
+                      padding:14px 16px;margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="color:#10b981;font-weight:700;font-size:.95rem">👤 ${s.name}</span>
+              <span style="font-size:.75rem;color:var(--text-3)">#${i+1}</span>
+            </div>
+            <div style="font-size:.78rem;color:var(--text-2);margin-bottom:3px">🕐 ${fmt(s.time) || s.time}</div>
+            <div style="font-size:.78rem;color:var(--text-2);margin-bottom:3px">🌐 ${s.ip}</div>
+            <div style="font-size:.72rem;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">💻 ${s.user_agent}</div>
+          </div>
+        `).join('')}
+      </div>`;
+  } else {
+    submissionsHtml = `
+      <div style="margin-top:16px;padding:14px 16px;background:#0a0d16;
+                  border:1px solid var(--border);border-radius:12px;
+                  color:var(--text-3);font-size:.85rem;text-align:center">
+        Forma hali to'ldirilmagan
+      </div>`;
+  }
+
+  document.getElementById('modal-body').innerHTML =
+    rows.map(([k, v, isLink]) => `
+      <div class="detail-row">
+        <span class="detail-key">${k}</span>
+        <span class="detail-val ${isLink ? 'mono' : ''}">
+          ${isLink ? `<a href="${v}" target="_blank" rel="noreferrer">${v}</a>` : v}
+        </span>
+      </div>
+    `).join('') + submissionsHtml;
 
   document.getElementById('modal').classList.add('open');
 }

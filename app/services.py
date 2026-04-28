@@ -272,9 +272,25 @@ def latest_event_time(events: list[CampaignEvent], event_type: EventType) -> str
     return None
 
 
+def _extract_submissions(events: list[CampaignEvent]) -> list[dict[str, Any]]:
+    result = []
+    for e in events:
+        if e.event_type != EventType.SUBMITTED:
+            continue
+        meta = json.loads(e.metadata_json)
+        result.append({
+            "name": f"{meta.get('first_name', '')} {meta.get('last_name', '')}".strip(),
+            "time": e.created_at.isoformat(sep=" ", timespec="seconds"),
+            "ip": e.ip_address,
+            "user_agent": e.user_agent,
+        })
+    return result
+
+
 def recipient_status_payload(db: Session, recipient: CampaignRecipient, base_url: str) -> dict[str, Any]:
     summary = recipient_summary(db, recipient)
     events = summary["events"]
+    submissions = _extract_submissions(events)
     return {
         "recipient_id": recipient.id,
         "email": recipient.email,
@@ -286,14 +302,8 @@ def recipient_status_payload(db: Session, recipient: CampaignRecipient, base_url
         "clicked_at": latest_event_time(events, EventType.CLICKED),
         "viewed_at": latest_event_time(events, EventType.VIEWED),
         "submitted_at": latest_event_time(events, EventType.SUBMITTED),
-        "submitted_name": next(
-            (
-                f"{json.loads(event.metadata_json).get('first_name', '')} {json.loads(event.metadata_json).get('last_name', '')}".strip()
-                for event in events
-                if event.event_type == EventType.SUBMITTED
-            ),
-            None,
-        ),
+        "submitted_name": submissions[0]["name"] if submissions else None,
+        "submissions": submissions,
     }
 
 
@@ -318,15 +328,7 @@ def list_recipients_status(db: Session, base_url: str) -> list[dict[str, Any]]:
     result = []
     for r in recipients:
         evs = ev_map[r.token]
-        submitted_name = next(
-            (
-                f"{json.loads(e.metadata_json).get('first_name','')} "
-                f"{json.loads(e.metadata_json).get('last_name','')}".strip()
-                for e in evs
-                if e.event_type == EventType.SUBMITTED
-            ),
-            None,
-        )
+        submissions = _extract_submissions(evs)
         result.append({
             "id": r.id,
             "email": r.email,
@@ -339,7 +341,8 @@ def list_recipients_status(db: Session, base_url: str) -> list[dict[str, Any]]:
             "clicked_at": latest_event_time(evs, EventType.CLICKED),
             "viewed_at": latest_event_time(evs, EventType.VIEWED),
             "submitted_at": latest_event_time(evs, EventType.SUBMITTED),
-            "submitted_name": submitted_name,
+            "submitted_name": submissions[0]["name"] if submissions else None,
+            "submissions": submissions,
         })
     return result
 
