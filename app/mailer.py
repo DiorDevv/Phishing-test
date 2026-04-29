@@ -7,6 +7,7 @@ from email.mime.text import MIMEText
 from fastapi import HTTPException
 
 from app.config import (
+    BREVO_API_KEY,
     RESEND_API_KEY,
     SMTP_DISPLAY_NAME,
     SMTP_FROM,
@@ -26,6 +27,10 @@ _EVENT_META = {
 }
 
 
+def brevo_ready() -> bool:
+    return bool(BREVO_API_KEY and SMTP_FROM)
+
+
 def resend_ready() -> bool:
     return bool(RESEND_API_KEY and SMTP_FROM)
 
@@ -35,7 +40,24 @@ def smtp_ready() -> bool:
 
 
 def mailer_ready() -> bool:
-    return resend_ready() or smtp_ready()
+    return brevo_ready() or resend_ready() or smtp_ready()
+
+
+def _send_via_brevo(*, to_email: str, subject: str, html_body: str) -> None:
+    import requests
+    from_addr = {"email": SMTP_FROM, "name": SMTP_DISPLAY_NAME or SMTP_FROM}
+    resp = requests.post(
+        "https://api.brevo.com/v3/smtp/email",
+        headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json"},
+        json={
+            "sender": from_addr,
+            "to": [{"email": to_email}],
+            "subject": subject,
+            "htmlContent": html_body,
+        },
+        timeout=30,
+    )
+    resp.raise_for_status()
 
 
 def _send_via_resend(*, to_email: str, subject: str, html_body: str) -> None:
@@ -72,6 +94,9 @@ def _make_message(to_email: str, subject: str, html_body: str) -> MIMEMultipart:
 
 
 def send_html_email(*, to_email: str, subject: str, html_body: str) -> None:
+    if brevo_ready():
+        _send_via_brevo(to_email=to_email, subject=subject, html_body=html_body)
+        return
     if resend_ready():
         _send_via_resend(to_email=to_email, subject=subject, html_body=html_body)
         return

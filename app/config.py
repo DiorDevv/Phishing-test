@@ -38,3 +38,4 @@ SMTP_USE_TLS = os.getenv("SIM_SMTP_USE_TLS", "true").lower() == "true"
 SMTP_DISPLAY_NAME = os.getenv("SIM_SMTP_DISPLAY_NAME", "")
 
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
