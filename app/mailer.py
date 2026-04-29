@@ -6,7 +6,16 @@ from email.mime.text import MIMEText
 
 from fastapi import HTTPException
 
-from app.config import SMTP_DISPLAY_NAME, SMTP_FROM, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME, SMTP_USE_TLS
+from app.config import (
+    RESEND_API_KEY,
+    SMTP_DISPLAY_NAME,
+    SMTP_FROM,
+    SMTP_HOST,
+    SMTP_PASSWORD,
+    SMTP_PORT,
+    SMTP_USERNAME,
+    SMTP_USE_TLS,
+)
 
 log = logging.getLogger(__name__)
 
@@ -17,8 +26,28 @@ _EVENT_META = {
 }
 
 
+def resend_ready() -> bool:
+    return bool(RESEND_API_KEY and SMTP_FROM)
+
+
 def smtp_ready() -> bool:
     return bool(SMTP_HOST and SMTP_PORT and SMTP_FROM)
+
+
+def mailer_ready() -> bool:
+    return resend_ready() or smtp_ready()
+
+
+def _send_via_resend(*, to_email: str, subject: str, html_body: str) -> None:
+    import resend
+    resend.api_key = RESEND_API_KEY
+    from_addr = f"{SMTP_DISPLAY_NAME} <{SMTP_FROM}>" if SMTP_DISPLAY_NAME else SMTP_FROM
+    resend.Emails.send({
+        "from": from_addr,
+        "to": [to_email],
+        "subject": subject,
+        "html": html_body,
+    })
 
 
 def _open_smtp() -> smtplib.SMTP:
@@ -43,8 +72,11 @@ def _make_message(to_email: str, subject: str, html_body: str) -> MIMEMultipart:
 
 
 def send_html_email(*, to_email: str, subject: str, html_body: str) -> None:
+    if resend_ready():
+        _send_via_resend(to_email=to_email, subject=subject, html_body=html_body)
+        return
     if not smtp_ready():
-        raise HTTPException(status_code=400, detail="SMTP is not configured")
+        raise HTTPException(status_code=400, detail="Email sender is not configured")
     msg = _make_message(to_email, subject, html_body)
     server = _open_smtp()
     try:
@@ -69,7 +101,7 @@ def notify_admin(
     user_agent: str = "—",
     extra: dict | None = None,
 ) -> None:
-    if not smtp_ready():
+    if not mailer_ready():
         return
 
     label, color = _EVENT_META.get(event_type, (event_type, "#6366f1"))
@@ -139,12 +171,7 @@ def notify_admin(
 </body></html>"""
 
     try:
-        msg = _make_message(SMTP_FROM, subject, body)
-        server = _open_smtp()
-        try:
-            server.sendmail(SMTP_FROM, [SMTP_FROM], msg.as_string())
-        finally:
-            server.quit()
+        send_html_email(to_email=SMTP_FROM, subject=subject, html_body=body)
         log.info("notify_admin OK: %s -> %s", event_type, recipient_email)
     except Exception as exc:
         log.error("notify_admin FAILED: %s -> %s | %s", event_type, recipient_email, exc)

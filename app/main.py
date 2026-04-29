@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.config import STATIC_DIR, TEMPLATES_DIR
 from app.database import Base, engine, get_db
-from app.mailer import notify_admin, send_html_email, send_html_email_background, smtp_ready
+from app.mailer import mailer_ready, notify_admin, send_html_email, send_html_email_background, smtp_ready
 from app.models import CampaignEvent, EventType
 from app.services import (
     client_context,
@@ -136,8 +136,8 @@ def send_single_email(
             intro_line="Quyidagi tugmani bosib ism va familiyangizni kiriting.",
         )
         subject = "Ma'lumotlaringizni kiriting"
-    if not smtp_ready():
-        raise HTTPException(status_code=400, detail="SMTP is not configured")
+    if not mailer_ready():
+        raise HTTPException(status_code=400, detail="Email sender is not configured")
     db.commit()
     background_tasks.add_task(
         send_html_email_background,
