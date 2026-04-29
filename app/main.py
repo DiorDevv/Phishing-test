@@ -89,6 +89,28 @@ def recipient_detail(recipient_id: int, request: Request, db: Session = Depends(
     )
 
 
+@app.get("/api/smtp-test")
+def smtp_test(request: Request):
+    require_admin(request)
+    from app.config import SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_FROM
+    from app.mailer import _open_smtp
+    import smtplib
+    result = {
+        "host": SMTP_HOST,
+        "port": SMTP_PORT,
+        "username": SMTP_USERNAME,
+        "from": SMTP_FROM,
+        "smtp_ready": smtp_ready(),
+    }
+    try:
+        server = _open_smtp()
+        server.quit()
+        result["connection"] = "OK"
+    except Exception as e:
+        result["connection"] = f"FAILED: {type(e).__name__}: {e}"
+    return result
+
+
 @app.post("/api/send")
 def send_single_email(
     request: Request,
