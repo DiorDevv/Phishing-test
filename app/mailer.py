@@ -53,6 +53,14 @@ def send_html_email(*, to_email: str, subject: str, html_body: str) -> None:
         server.quit()
 
 
+def send_html_email_background(*, to_email: str, subject: str, html_body: str) -> None:
+    try:
+        send_html_email(to_email=to_email, subject=subject, html_body=html_body)
+        log.info("send_html_email OK -> %s", to_email)
+    except Exception as exc:
+        log.error("send_html_email FAILED -> %s | %s", to_email, exc)
+
+
 def notify_admin(
     *,
     event_type: str,
