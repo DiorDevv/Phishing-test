@@ -6,7 +6,7 @@ from collections import Counter, defaultdict
 from typing import Any
 
 from fastapi import HTTPException, Request, UploadFile
-from sqlalchemy import desc, select
+from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models import Campaign, CampaignEvent, CampaignRecipient, EventType
@@ -230,7 +230,11 @@ def list_recipient_events(db: Session, token: str) -> list[CampaignEvent]:
 
 
 def event_counts(db: Session) -> dict[str, int]:
-    counts = Counter(event.event_type.value for event in list_events(db, limit=5000))
+    rows = db.execute(
+        select(CampaignEvent.event_type, func.count().label("n"))
+        .group_by(CampaignEvent.event_type)
+    ).all()
+    counts = {row.event_type.value: row.n for row in rows}
     return {event.value: counts.get(event.value, 0) for event in EventType}
 
 

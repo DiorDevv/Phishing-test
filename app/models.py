@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 from sqlalchemy import DateTime, Enum as SqlEnum, ForeignKey, Integer, String, Text
@@ -23,7 +23,7 @@ class Campaign(Base):
     scenario_name: Mapped[str] = mapped_column(String(255), nullable=False)
     landing_title: Mapped[str] = mapped_column(String(255), nullable=False, default="Security Awareness Drill")
     landing_message: Mapped[str] = mapped_column(Text, nullable=False, default="This is a safe internal simulation.")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     recipients: Mapped[list["CampaignRecipient"]] = relationship(
         back_populates="campaign",
@@ -41,7 +41,7 @@ class CampaignRecipient(Base):
     employee_ref: Mapped[str] = mapped_column(String(64), nullable=False, default="N/A")
     department: Mapped[str] = mapped_column(String(128), nullable=False, default="General")
     token: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     campaign: Mapped[Campaign] = relationship(back_populates="recipients")
 
@@ -55,4 +55,4 @@ class CampaignEvent(Base):
     ip_address: Mapped[str] = mapped_column(String(64), default="unknown", nullable=False)
     user_agent: Mapped[str] = mapped_column(Text, default="unknown", nullable=False)
     metadata_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)

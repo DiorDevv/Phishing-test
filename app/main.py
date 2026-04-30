@@ -173,6 +173,7 @@ def api_delete_recipient(recipient_id: int, request: Request, db: Session = Depe
 
 @app.get("/pixel/{token}")
 def track_open(token: str, request: Request, db: Session = Depends(get_db)):
+    get_recipient_or_404(db, token)
     ip_address, user_agent = client_context(request)
     log_event(db, token, EventType.OPENED, ip_address=ip_address, user_agent=user_agent)
     db.commit()
