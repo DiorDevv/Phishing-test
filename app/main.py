@@ -172,25 +172,10 @@ def api_delete_recipient(recipient_id: int, request: Request, db: Session = Depe
 
 
 @app.get("/pixel/{token}")
-def track_open(token: str, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    recipient = get_recipient_or_404(db, token)
+def track_open(token: str, request: Request, db: Session = Depends(get_db)):
     ip_address, user_agent = client_context(request)
-    already_opened = db.scalar(
-        select(CampaignEvent).where(
-            CampaignEvent.token == token,
-            CampaignEvent.event_type == EventType.OPENED,
-        )
-    )
     log_event(db, token, EventType.OPENED, ip_address=ip_address, user_agent=user_agent)
     db.commit()
-    if not already_opened:
-        background_tasks.add_task(
-            notify_admin,
-            event_type="opened",
-            recipient_email=recipient.email,
-            ip_address=ip_address,
-            user_agent=user_agent,
-        )
     return Response(
         content=_TRANSPARENT_GIF,
         media_type="image/gif",
